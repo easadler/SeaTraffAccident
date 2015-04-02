@@ -35,11 +35,17 @@ data$Intersection <- factor(data$Intersection)
 #Split intersections
 
 split_intersections <- sapply(data$Hundred_Block, function(x){strsplit(x, "/", fixed = TRUE)})
+split_intersections_logicals <- grepl('/', data$Hundred_Block)
+
 
 data$Street_1 <- unname(sapply(split_intersections, function(x){ x[1]}))
-data$Street_1 <- sapply(data$Street_1, function(x){unlist(strsplit(x, split='OF ', fixed=TRUE))[2]})
+data$Street_1[split_intersections_logicals] <- sapply(data$Street_1[split_intersections_logicals], function(x){ gsub(".OF ","", x)})
 
-data$Street_2 <- unname(sapply(split_intersections, function(x){ x[2]}))
+
+data$Street_1 <- gsub("^.*OF ","", data$Street_1)
+
+data$Street_2 <- unname(sapply(split_intersections, function(x){ gsub("^([ \t\n\r\f\v]+)", "",x[2])}))
+
 #Find close accidents
 
 function(FALSE){
@@ -81,3 +87,38 @@ data$DATE <- format(data$Clearance_DateTime, "%Y-%m-%d")
 
 # Merge data sets
 total <- merge(data, weather, by = "DATE")
+names(total)[names(total) == 'Street_1'] <- "STNAME"
+
+
+
+
+
+
+# Attempt at getting street traffic data. To many missing values
+
+
+if(FALSE){
+# Get street data
+traffic <- read.csv("Streets.csv")
+
+unik <- !duplicated(traffic$STNAME)  ## logical vector of unique values
+traffic$unik <- unik
+traffic <- traffic[traffic$unik == TRUE,]
+traffic <- subset(traffic, STNAME != "")
+traffic <- traffic[,c("STNAME", "AAWDT", "DOWNTOWN")]
+row.names(traffic) <- NULL
+
+ww <- merge(total, traffic, by='STNAME', all.x = TRUE)
+
+
+#Merge for second street info
+#traffic2 <- traffic[,1:2]
+#names(traffic2) <- c("Street_2", "AAWST_2")
+
+#final <- merge(total, traffic2, by = 'Street_2', all.x = TRUE)
+
+}
+
+
+
+
